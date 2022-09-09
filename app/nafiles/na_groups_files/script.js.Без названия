@@ -1,0 +1,204 @@
+const PHONE_REGEX1 = /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|ipad|iris|kindle|Android|Silk|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i;
+const PHONE_REGEX2 = /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i;
+
+let isMobile = false;
+
+// device detection
+if(PHONE_REGEX1.test(navigator.userAgent)
+	|| PHONE_REGEX2.test(navigator.userAgent.substr(0,4))) {
+	isMobile = true;
+}
+//validation
+jQuery.fn.ForceNumericOnly =
+function()
+{
+    return this.each(function()
+    {
+        $(this).keydown(function(e)
+        {
+            var key = e.charCode || e.keyCode || 0;
+            // allow backspace, tab, delete, enter, arrows, numbers and keypad numbers ONLY
+            // home, end, period, and numpad decimal
+            return (
+                key == 8 || 
+                key == 9 ||
+                key == 13 ||
+                key == 46 ||
+                key == 110 ||
+                key == 190 ||
+                (key >= 35 && key <= 40) ||
+                (key >= 48 && key <= 57) ||
+                (key >= 96 && key <= 105));
+        });
+    });
+};
+
+$(document).ready(function () {
+	$("#paymentSum").ForceNumericOnly();
+	//tabs
+
+	$('#donation').on('change', function (e) {
+		$('#Tab li a').eq($(this).val()).tab('show');
+		var payKey = $(this).find(':selected').attr('data-id');
+		$("#TinkoffPayForm input[name='terminalkey']").val(payKey);
+	});
+
+	$('#Tab a').click(function(e){
+		e.preventDefault();
+		$(this).tab('show');
+	});
+
+	$('input[type="checkbox"]').change(function() {
+		var payCheck = $("input[type='checkbox']");
+		submitButton = $('#payment__pay');
+
+		if(payCheck.length == payCheck.filter(":checked").length){
+			submitButton.removeClass('disabled');
+		} else {
+			submitButton.addClass('disabled');
+		}
+	});
+
+	$('.list-unstyled li').click(function () {
+		$(this).parent('ul').find('li').removeClass('active');
+		$(this).addClass('active');
+	});
+
+	$('.new-sked-status-item').click(function () {
+		$('.new-sked-status-item').removeClass('active');
+		$(this).addClass('active');
+	});
+
+
+	$('.new-sked-checkbox').on('click',function(e){
+		e.preventDefault();
+		$(this).toggleClass('active');
+	});
+
+	$('.new-sked-group-filter-menu a').click(function () {
+		$('.new-sked-group-filter-menu li').removeClass('active');
+		$(this).parent('li').addClass('active');
+	});
+
+	$('.new-question-top').click(function () {
+		$(this).parent('.new-question-block').toggleClass('active');
+		$(this).parent('.new-question-block').find('.new-question-inner').slideToggle(300);
+	});
+
+	$('.service-form-block-flex-item label').click(function function_name(argument) {
+		var formCheckId = $(this).find('input').attr('id');
+		$(this).attr('for', formCheckId);
+	});
+
+	$('.service-checkbox').on('click',function(e){
+		e.preventDefault();
+		$(this).toggleClass('active');
+	});
+
+	$('.service-form-inner-more-btn').click(function () {
+		$('.service-form-inner-more').slideToggle(300);
+	});
+
+
+	if($(window).width() < 574) {
+		$('.member-news-block-images').slick({
+			arrows : false,
+			dots: true,
+		});
+		$('.member-service-mko-slider').slick({
+			arrows : false,
+			dots: true,
+		});
+	} else {
+
+	}
+
+	$(window).scroll(function() {
+		var $height = $(window).scrollTop();
+		if($height > 40) {
+			if (window.innerWidth < 993) {
+				$('.mob-header').addClass('mob-header-2');
+				$('.mob-footer-icons').addClass('mob-footer-icons-active');
+			}
+		} else {
+			$('.mob-header').removeClass('mob-header-2');
+			$('.mob-footer-icons').removeClass('mob-footer-icons-active');
+		}
+
+		if($height > 100) {
+			if (window.innerWidth < 993) {
+				$('.mob-header').addClass('mob-header-3');
+			}
+		} else {
+			$('.mob-header').removeClass('mob-header-3');
+		}
+	});
+
+	if($(window).width() > 1024) {
+		$('#menuBeginnerButton').on('click',function(e){
+			e.preventDefault();
+			$(this).toggleClass('active');
+		});
+	}
+
+	$('.bars').on('click',function(e){
+		$('.mob-menu').addClass('mob-menu-active');
+	});
+
+	$('.mobile-menu-close').on('click',function(e){
+		$('.mob-menu').removeClass('mob-menu-active');
+	});
+
+	if (isMobile) {
+		$("ul[class*='main-menu-']").each(function () {
+			$(this).children('li').each(function () {
+				$(this).on('click', () => window.location.href = $(this).children('a').attr('href'));
+			})
+		})
+	}
+
+	const select2Config = {
+        'templateSelection': (d) => {
+            d.title = '---' + d.id;
+            return d.text;
+        },
+        'language': {
+            noResults: () => 'ничего не найдено',
+		}
+	};
+	if (isMobile) {
+		select2Config["width"] = '100%';
+    }
+	$('select.custom-select').select2(select2Config);
+
+	(function manageAdditionalLocationInfo() {
+		const openText = 'Открыть подробную инструкцию';
+		const closeText = 'Закрыть подробную инструкцию';
+		const container = $('.member-service-mko-additional-location-images');
+		const showMoreBtn = $('.location-images-show-more');
+
+		if (container.children.length > 0) {
+			showMoreBtn.show().text(openText);
+			container.hide();
+		}
+
+
+		showMoreBtn.on('click', function () {
+			if ($(this).is(":visible")) {
+				container.toggle();
+				$(this).text() === openText ? $(this).text(closeText) : $(this).text(openText);
+			}
+		})
+	})();
+
+	const playerOpts = {
+		controls: [
+			'play',
+			'mute',
+			'volume',
+		]
+	};
+	const players = Array.from(document.querySelectorAll('.plyr-audio')).map(p => new Plyr(p, playerOpts));
+
+
+});

@@ -1,0 +1,56 @@
+{% import "bootstrap/utils.html" as utils %}
+{% extends "base.html" %}
+{% block title %}NAGroups{% endblock %}
+{% block body %}
+<div class="content-section">
+  <div class="outer">
+    <div class="middle">
+      <div class="inner">
+        <br/>
+        {{ utils.flashed_messages() }}
+        <br/>
+        <h1 style="text-align:center;">NAGroups</h1>
+        {% if nagroups %}
+          <hr class="intro-divider">
+            <a class="center" href="/download_groups">
+                      <i class="fa fa-download"></i> Download group list
+            </a>
+          <div class="center">
+
+            <table class="table table-striped table-bordered">
+              <thead>
+                <tr>
+                  <th width="15%"> Name </th>
+                  <th width="40%"> Info link </th>
+                  <th width="15%"> address </th>
+                  <th width="15%"> Description </th>
+                  <th> Address</th>
+                  <th> Ссылка на карту</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for nagroup in nagroups %}
+                <tr>
+                  <td> {{ nagroup.name }} </td>
+                  <td> <a href="{{ nagroup.info_link }}">{{ nagroup.name }}</a> </td>
+                  <td> {{ nagroup.address }} </td>
+                  <td> {{ nagroup.description}} </td>
+                  <td> {{ nagroup.address}} </td>
+                  <td> <a href="{{ nagroup.ya_geo_link}}">Map</a></td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div style="text-align: center">
+        {% else %}
+          <div style="text-align: center">
+            <h3> No NaGroups have been added. </h3>
+            <hr class="intro-divider">
+        {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

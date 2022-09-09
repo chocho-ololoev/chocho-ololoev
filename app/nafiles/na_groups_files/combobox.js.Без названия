@@ -1,0 +1,337 @@
+"use strict";
+
+function filtersCombobox() {
+    let COMBOBOX_SUGGEST_TEMPLATE = () => {};
+    let COMBOBOX_SELECTED_ITEMS_TEMPLATE = () => {};
+    let COMBOBOX_SELECTED_ITEMS = [];
+    let COMBOBOX_AJAX_URL = "";
+    let ajaxController = undefined;
+
+    function clickHandler(e) {
+        e.stopPropagation();
+        renderSuggest();
+        const cont = $(".combobox-container");
+        if (!cont.is(".combobox-focused")) {
+            cont.addClass("combobox-focused");
+        }
+    }
+
+    function hideDropdown() {
+        setTimeout(
+            () => {
+                $(".combobox-container").removeClass("combobox-focused");
+            },
+            100
+        );
+    }
+
+    function renderSuggest() {
+        const suggest_data = readSuggestData();
+        const input_value = $.trim($(".combobox-input").val().toLowerCase());
+        let filtered_values = suggest_data;
+        if (input_value) {
+            const filter_fn = (item) => {
+                if (item.isGroup) return true;
+                return item.value.toLowerCase().includes(input_value);
+
+            };
+            filtered_values =filtered_values.filter(filter_fn)
+        }
+        $(".combobox-suggest").html(
+            COMBOBOX_SUGGEST_TEMPLATE({suggest_items: filtered_values})
+        );
+    }
+
+    function readSuggestData() {
+        const suggestData = [];
+        $(".combobox-data optgroup").each(function () {
+            const group = $(this);
+            suggestData.push({
+                isGroup: true,
+                value: group.attr("label")
+            });
+            const prefix = group.attr("data-prefix");
+            const groupId = group.attr("data-id");
+
+            group.find("option").each(function () {
+                const opt = $(this);
+                suggestData.push({
+                    isGroup: false,
+                    groupId: groupId,
+                    prefix: prefix,
+                    id: opt.attr("value"),
+                    value: opt.text(),
+                    disabled: opt.is(":disabled")
+                });
+            });
+            if (suggestData[suggestData.length-1].isGroup) {
+                suggestData.pop();
+            }
+        });
+        return suggestData;
+    }
+
+    function onSuggestItem(e) {
+        e.stopPropagation();
+
+        const item = $(this);
+        COMBOBOX_SELECTED_ITEMS.push({
+            groupId: item.attr("data-group-id"),
+            prefix: item.attr("data-prefix"),
+            id: item.attr("data-id"),
+            value: formatSelectedItemText(item.attr("data-group-id"), item.text()),
+        });
+        updateSelectedElements();
+        $(".combobox-input").val("");
+        hideDropdown();
+        $("#filters")[0].scrollIntoView(true);
+        scheduleFormSubmit();
+    }
+
+    function formatSelectedItemText(groupId, text) {
+        if (groupId != "days_of_week") return text;
+        text = text.toLowerCase();
+        switch (text) {
+            case "понедельник":
+            case "вторник":
+            case "четверг":
+                text = text + "ам";
+                break;
+            case "среда":
+            case "пятница":
+            case "суббота":
+                text = text + "м";
+                break;
+            default:
+                text = "воскресеньям"
+        }
+        return text;
+    }
+
+    function onDeleteItem(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const itemId = $(this).attr("data-id");
+        COMBOBOX_SELECTED_ITEMS = COMBOBOX_SELECTED_ITEMS.filter((item) => item.id != itemId);
+        updateSelectedElements();
+        scheduleFormSubmit();
+    }
+
+    function updateSelectedElements() {
+        $(".combobox-selected-items").html(
+            COMBOBOX_SELECTED_ITEMS_TEMPLATE({
+                selected_items: COMBOBOX_SELECTED_ITEMS
+            })
+        );
+    }
+
+    function onSwithToggle(e) {
+        e.preventDefault();
+        const link = $(this);
+        if (link.is(".combobox-toggle-selected")) {
+            link.removeClass("combobox-toggle-selected")
+        } else {
+            link.addClass("combobox-toggle-selected")
+        }
+        scheduleFormSubmit();
+    }
+
+    function scheduleFormSubmit() {
+        if (COMBOBOX_AJAX_URL) {
+            sendAjaxForm()
+        } else {
+            sendForm()
+        }
+    }
+
+    function sendAjaxForm() {
+        if (ajaxController) {
+            ajaxController.abort();
+        }
+        ajaxController = new AbortController();
+        let url = buildFormQueryString(COMBOBOX_AJAX_URL);
+        const rootElement = $("#groups-list-ajax-content");
+        const cfgData = rootElement.data();
+
+        if (cfgData.tl != 'False') {
+            url += "&tl=true"
+        }
+
+        if (cfgData.city != 'None') {
+            url += "&city=" + cfgData.city
+        }
+
+        const cfg = {
+            signal: ajaxController.signal
+        }
+        fetch(url, cfg).then(
+            (resp) => {
+                resp.text().then((data) => {
+                    $("#groups-list-ajax-content").html(data);
+                    initSelectedItems();
+                })
+            }
+        );
+    }
+
+    function sendForm() {
+        let url = buildFormQueryString(window.location.pathname.toString());
+        window.location.href = url + "#filters";
+    }
+
+    function buildFormQueryString(baseUrl) {
+        const formData = getFormData();
+        let url = baseUrl;
+        const queryString = [];
+        for (let k in formData) {
+            if ( ! formData[k]) continue;
+            queryString.push(k + "=" + formData[k]);
+        }
+
+        if (queryString.length) {
+            url += "?" + queryString.join("&");
+        }
+        return url;
+    }
+
+    function getFormData() {
+        const formData = {
+            groups: "",
+            districts: "",
+            metro_stations: "",
+            subjects: "",
+            addresses: "",
+            days_of_week: "",
+            cities: ""
+        };
+
+        for (const item of COMBOBOX_SELECTED_ITEMS) {
+            let data = formData[item.groupId];
+            data = data ? data.split(",") : [];
+            data.push(item.id);
+            formData[item.groupId] = data.join(",")
+        }
+
+        if ($(".combobox-toggle-24").is(".combobox-toggle-selected")) {
+            formData["time_interval"] = "all_day"
+        }
+
+        if ($(".combobox-toggle-online").is(".combobox-toggle-selected")) {
+            formData["online"] = "yes"
+        }
+
+        if ($(".combobox-toggle-inv").is(".combobox-toggle-selected")) {
+            formData["accessibility_for_disabled"] = "yes"
+        }
+
+        if ($(".combobox-toggle-special").is(".combobox-toggle-selected")) {
+            formData["special_mark"] = "yes"
+        }
+
+        if ($(".combobox-toggle-metro").is(".combobox-toggle-selected")) {
+            formData["step_availability"] = "yes"
+        }
+
+        return formData;
+    }
+
+    function initSelectedItems() {
+        COMBOBOX_SELECTED_ITEMS = [];
+        $("select.combobox-data optgroup").each(function () {
+            const g = $(this);
+
+            g.find("option[disabled=disabled]").each(function () {
+                const item = $(this);
+                COMBOBOX_SELECTED_ITEMS.push({
+                    groupId: g.attr("data-id"),
+                    prefix: g.attr("data-prefix"),
+                    id: item.attr("value"),
+                    value: formatSelectedItemText(g.attr("data-id"), item.text()),
+                })
+            })
+        });
+        updateSelectedElements();
+    }
+
+    function initToggles() {
+        const queryString = window.location.search;
+        if (queryString.includes("time_interval=all_day")) {
+            $(".combobox-toggle-24").addClass("combobox-toggle-selected")
+        }
+
+        if (queryString.includes("accessibility_for_disabled=yes")) {
+            $(".combobox-toggle-inv").addClass("combobox-toggle-selected")
+        }
+
+        if (queryString.includes("special_mark=yes")) {
+            $(".combobox-toggle-special").addClass("combobox-toggle-selected")
+        }
+
+        if (queryString.includes("online=yes")) {
+            $(".combobox-toggle-online").addClass("combobox-toggle-selected")
+        }
+
+        if (queryString.includes("step_availability=yes")) {
+            $(".combobox-toggle-metro").addClass("combobox-toggle-selected")
+        }
+    }
+
+    COMBOBOX_AJAX_URL = $(".combobox-container").attr("data-combobox-url");
+    $(window).click(function(e) {
+        const tartgetId = e.target.id;
+        if (tartgetId != "groups-list-ajax-content") hideDropdown();
+    });
+    COMBOBOX_SUGGEST_TEMPLATE = Handlebars.compile($("#combobox-suggest-template").html());
+    COMBOBOX_SELECTED_ITEMS_TEMPLATE = Handlebars.compile($("#combobox-suggest-selected-items-template").html());
+
+
+    $(".combobox-nondynamic-content").on("click", "div.combobox-suggest-item", onSuggestItem);
+    $(".combobox-nondynamic-content").on("focus keyup click", ".combobox-input", clickHandler);
+    $(".combobox-nondynamic-content").on("click", "a.combobox-selected-item-delete-link", onDeleteItem);
+    $(".combobox-nondynamic-content").on("click", ".combobox-toggles a", onSwithToggle);
+    // $("#groups-list-ajax-content").on("change", ".combobox-input", hideDropdown);
+
+    initSelectedItems();
+    initToggles();
+}
+
+function comboboxSelectedItemsScroll() {
+    const slider = document.querySelector(".combobox-selected-items");
+    if ( ! slider) return;
+    let mouseDown = false;
+    let startX, scrollLeft;
+
+    const startDragging = function (e) {
+        mouseDown = true;
+        const xPos = e.pageX || e.touches[0].pageX;
+        startX = xPos - slider.offsetLeft;
+        scrollLeft = slider.scrollLeft;
+    };
+    const stopDragging = function () {
+        mouseDown = false;
+    };
+
+    const trackMovement = function (e) {
+        e.preventDefault();
+        if(!mouseDown) { return; }
+        const xPos = e.pageX || e.touches[0].pageX;
+        const x = xPos - slider.offsetLeft;
+        const scroll = x - startX;
+        slider.scrollLeft = scrollLeft - scroll;
+    };
+
+    slider.addEventListener("mousemove", trackMovement);
+    slider.addEventListener("touchmove", trackMovement);
+
+    slider.addEventListener("mousedown", startDragging, false);
+    slider.addEventListener("touchstart", startDragging, false);
+    slider.addEventListener("mouseup", stopDragging, false);
+    slider.addEventListener("touchend", stopDragging, false);
+    slider.addEventListener("mouseleave", stopDragging, false);
+    slider.addEventListener("touchcancel", stopDragging, false);
+}
+
+$(() => {
+    filtersCombobox();
+    comboboxSelectedItemsScroll();
+});
