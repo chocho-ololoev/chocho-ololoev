@@ -28,7 +28,8 @@
                       <li><a href="{{ url_for('admin.list_roles') }}">Roles</a></li>
                       <li><a href="{{ url_for('admin.list_employees') }}">Employees</a></li>
                       <li><a href="{{ url_for('admin.list_groups') }}">NA Groups</a></li>
-                      <li><a href="{{ url_for('nagroupparsing.list_parse_log') }}">Parse group info</a></li>
+                      <li><a href="{{ url_for('nagroupparsing.list_parse_log') }}">Group info parsing</a></li>
+                      <li><a href="{{ url_for('nagroupparsing.list_parsetasks') }}">Parsing tasks</a></li>
                     {% else %}
                       <li><a href="{{ url_for('home.dashboard') }}">Dashboard</a></li>
                     {% endif %}

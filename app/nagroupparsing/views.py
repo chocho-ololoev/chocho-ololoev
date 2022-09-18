@@ -51,3 +51,16 @@ def proceedparsingtask(id):
 
     return render_template('nagroupparsing/parsingtask.html',
                            parsingtask=parsingtask, title="Parsing task")
+
+@nagroupparsing.route('/nagrouptasks', methods=['GET', 'POST'])
+@login_required
+# NaGroup Views
+def list_parsetasks():
+    """
+    List all groups parsing tasks
+    """
+    check_admin()
+    parsingtasks = ParsingTask.query.all()
+
+    return render_template('nagroupparsing/parsingtasks.html',
+                           parsingtasks=parsingtasks, title="Parsing task")
